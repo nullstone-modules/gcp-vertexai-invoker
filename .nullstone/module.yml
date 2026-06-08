@@ -1,0 +1,19 @@
+org_name: nullstone
+name: gcp-vertexai-invoker
+friendly_name: Vertex AI Invoker
+description: Least-privilege capability for enabling IAM access to call Vertex AI models to a GCP app -- model invocation and token counting only.
+category: capability
+subcategory: datastores
+provider_types:
+    - gcp
+platform: vertexai
+subplatform: ""
+type: ""
+appCategories:
+    - container
+    - serverless
+    - server
+is_public: true
+tool_name: opentofu
+include: []
+source_url: https://github.com/nullstone-modules/gcp-vertexai-invoker
