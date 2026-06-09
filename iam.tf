@@ -2,13 +2,6 @@ locals {
   // GCP custom role IDs must match ^[a-zA-Z0-9_.]{3,64}$ -- hyphens are not allowed, so
   // sanitize the hyphenated resource_name into a valid identifier.
   custom_role_id = replace(local.resource_name, "-", "_")
-
-  // The two permissions an inference workload actually uses. computeTokens is optional
-  // (Anthropic-only workloads count tokens client-side) and gated by var.include_compute_tokens.
-  invoker_permissions = concat(
-    ["aiplatform.endpoints.predict"],
-    var.include_compute_tokens ? ["aiplatform.endpoints.computeTokens"] : [],
-  )
 }
 
 // Project-scoped custom role containing only the inference permissions -- deliberately NOT
@@ -19,7 +12,7 @@ resource "google_project_iam_custom_role" "invoker" {
   description = "Least-privilege role to invoke Vertex AI models (predict + token counting only)."
   stage       = "GA"
 
-  permissions = local.invoker_permissions
+  permissions = ["aiplatform.endpoints.predict"]
 }
 
 // Bind the custom role to the app's runtime service account.

@@ -4,15 +4,13 @@ A least-privilege Nullstone capability that grants a workload's runtime identity
 
 ## Overview
 
-The common path is to hand a workload `roles/aiplatform.user` so it can reach Vertex AI. 
-That role also grants the ability to launch training jobs, deploy endpoints, and run batch prediction — capabilities an inference client never exercises, but that turns a compromised credential into a cost-bomb and an arbitrary-compute foothold.
+The common path is to hand a workload `roles/aiplatform.user` so it can reach Vertex AI. That role also grants the ability to launch training jobs, deploy endpoints, and run batch prediction — capabilities an inference client never exercises, but that turn a compromised credential into a cost-bomb and an arbitrary-compute foothold.
 
-This capability grants only the two permissions an inference workload actually uses (a LiteLLM proxy, an app calling Gemini / Claude / Kimi, an embedding service):
+This capability grants the single permission an inference workload actually uses (a LiteLLM proxy, an app calling Gemini / Claude / Kimi, an embedding service):
 
-- `aiplatform.endpoints.predict` — model invocation. Covers `generateContent` / `streamGenerateContent` (Gemini), `rawPredict` / `streamRawPredict` (Claude, Kimi, and other partner/MaaS models), embeddings, and calls to self-deployed endpoints.
-- `aiplatform.endpoints.computeTokens` — server-side token counting. Used by Gemini's `countTokens`; optional for Anthropic-only workloads, which count client-side.
+- `aiplatform.endpoints.predict` — model invocation. Covers `generateContent` / `streamGenerateContent` (Gemini), `rawPredict` / `streamRawPredict` (Claude, Kimi, and other partner/MaaS models), embeddings, and calls to self-deployed endpoints. It also authorizes the `countTokens` and `computeTokens` methods, so token-based usage accounting works without any additional grant. (`computeTokens`/`countTokens` are API methods, not IAM permissions — there is no separate `aiplatform.endpoints.computeTokens` permission to grant.)
 
-It packages these into a project-scoped custom IAM role and binds that role to the target workload identity. The worst-case abuse of the resulting credential is bounded inference spend — which you cap further with Vertex quotas and application-layer budgets.
+It packages this into a project-scoped custom IAM role and binds that role to the target workload identity. The worst-case abuse of the resulting credential is bounded inference spend — which you cap further with Vertex quotas and application-layer budgets.
 
 ## What it deliberately does NOT grant
 
@@ -27,10 +25,10 @@ This exclusion list is the product. The capability is a narrow edge between a wo
 
 ## How it works
 
-- Creates a project-level custom role (`vertexAiInvoker` by default) containing the two permissions above.
+- Creates a project-level custom role (`vertexAiInvoker` by default) containing the single permission above.
 - Binds that role to the workload's runtime service account:
-    - **As a capability attached to an app block**, it auto-discovers and binds the app's runtime service account (e.g., your LiteLLM service running on GKE via Workload Identity).
-    - **Standalone**, you pass the target service account email explicitly.
+  - **As a capability attached to an app block**, it auto-discovers and binds the app's runtime service account (e.g., your LiteLLM service running on GKE via Workload Identity).
+  - **Standalone**, you pass the target service account email explicitly.
 
 IAM here is project-scoped and **not** region-specific. Which Vertex region/location a request targets is configured at the application layer (e.g., LiteLLM's `vertex_location`), not in this capability. Granting predict at the project level keeps the role stable across region changes.
 
@@ -49,9 +47,11 @@ For standalone use, supply `project_id` and `target_service_account`.
 
 ## Inputs
 
-| Name                     | Description                                                                                                           | Default               |
-|--------------------------|-----------------------------------------------------------------------------------------------------------------------|-----------------------|
-| `include_compute_tokens` | Include `aiplatform.endpoints.computeTokens`. Set `false` for Anthropic-only workloads that count tokens client-side. | `true`                |
+There are no inputs.
+
+## Outputs
+
+There are no outputs.
 
 ## Security notes
 
